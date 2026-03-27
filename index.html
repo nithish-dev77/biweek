@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline-First Mobile Apps: Engineering Handbook</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            scroll-behavior: smooth;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        .slide-section {
+            min-height: 80vh;
+            padding-top: 4rem;
+            padding-bottom: 4rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .nav-link.active {
+            background-color: #f3f4f6;
+            font-weight: 600;
+            color: #111827;
+            border-left: 4px solid #4f46e5;
+        }
+        .code-block {
+            background-color: #1e293b;
+            color: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            font-family: monospace;
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.5;
+        }
+        .flow-node {
+            transition: all 0.3s ease;
+        }
+        .flow-active {
+            background-color: #4f46e5 !important;
+            color: white !important;
+            transform: scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+        }
+        .flow-path {
+            opacity: 0.2;
+            transition: all 0.3s ease;
+        }
+        .path-active {
+            opacity: 1;
+            color: #4f46e5;
+            font-weight: bold;
+        }
+        .hide {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-[#fcfcfc] text-slate-800 flex h-screen overflow-hidden">
+
+    <!-- Chosen Palette: Warm neutrals (off-white #fcfcfc) with indigo (#4f46e5) accents and deep slate (#1e293b) for code/contrast. -->
+    <!-- Application Structure Plan: A split-pane "Handbook" layout. Left pane is a sticky navigation sidebar doubling as a slide index. Right pane is the scrollable content area, broken down into 20 distinct sections (acting as presentation slides). This structure supports both guided presentation (scrolling section by section) and non-linear reference (clicking sidebar links). Interactive elements are embedded within sections to demonstrate concepts dynamically without leaving the context. -->
+    <!-- Visualization & Content Choices: 1. Chart.js Bar Chart -> Compare storage read/write speeds. Shows clear quantitative differences. 2. HTML/CSS Flow Simulator -> Demonstrate caching strategies visually. Avoids SVG while providing interactive mental models. 3. Interactive Code Tabs -> Show Expo implementations. Conserves space and groups related logic. 4. Conflict Resolution Demo -> HTML select/output logic to show how different rules apply to the same dataset. Confirming NO SVG/Mermaid used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <nav class="w-72 bg-white border-r border-slate-200 h-screen overflow-y-auto flex-shrink-0 hidden md:block pb-10">
+        <div class="p-6 sticky top-0 bg-white border-b border-slate-200 z-10">
+            <h1 class="text-xl font-bold text-indigo-700">Offline-First Engineering</h1>
+            <p class="text-xs text-slate-500 mt-1">Expo & React Native</p>
+        </div>
+        <ul class="py-4 text-sm" id="sidebar-nav">
+            <li><a href="#slide-1" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">1. The Offline-First Idea</a></li>
+            <li><a href="#slide-2" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">2. Why Build Offline-First?</a></li>
+            <li><a href="#slide-3" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">3. The Core Idea</a></li>
+            <li><a href="#slide-4" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">4. Expo & RN Ecosystem</a></li>
+            <li><a href="#slide-5" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">5. Local Storage Options</a></li>
+            <li><a href="#slide-6" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">6. Storage Speed Test</a></li>
+            <li><a href="#slide-7" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">7. Expo SQLite Basics</a></li>
+            <li><a href="#slide-8" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">8. MMKV for Simple Data</a></li>
+            <li><a href="#slide-9" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">9. WatermelonDB: Smart Data</a></li>
+            <li><a href="#slide-10" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">10. How to Get Data</a></li>
+            <li><a href="#slide-11" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">11. Interactive Strategy Simulator</a></li>
+            <li><a href="#slide-12" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">12. Data Fetching Code</a></li>
+            <li><a href="#slide-13" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">13. Saving Offline Changes</a></li>
+            <li><a href="#slide-14" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">14. The Offline Queue</a></li>
+            <li><a href="#slide-15" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">15. Instant Screen Updates</a></li>
+            <li><a href="#slide-16" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">16. Sending Saved Tasks</a></li>
+            <li><a href="#slide-17" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">17. Understanding Conflicts</a></li>
+            <li><a href="#slide-18" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">18. Conflict Simulator</a></li>
+            <li><a href="#slide-19" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">19. The Big Picture</a></li>
+            <li><a href="#slide-20" class="nav-link block px-6 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors">20. Summary & Best Practices</a></li>
+        </ul>
+    </nav>
+
+    <main id="main-content" class="flex-1 overflow-y-auto p-6 md:p-12 lg:p-20 relative scroll-smooth">
+        
+        <div class="max-w-4xl mx-auto">
+            
+            <section id="slide-1" class="slide-section flex flex-col justify-center border-none">
+                <div class="bg-indigo-50 text-indigo-700 px-4 py-1.5 rounded-full text-sm font-semibold inline-block mb-6 self-start tracking-wide uppercase">Slide 1 / 20</div>
+                <h1 class="text-5xl font-extrabold text-slate-900 leading-tight mb-6">Offline-First Mobile Apps</h1>
+                <h2 class="text-3xl font-light text-slate-500 mb-8">Caching, Local Storage, & Syncing in React Native</h2>
+                <p class="text-lg text-slate-600 leading-relaxed max-w-2xl mb-12">
+                    A simple guide and presentation for building fast, reliable mobile apps using Expo and React Native.
+                </p>
+                <div class="flex gap-4">
+                    <button onclick="document.getElementById('slide-2').scrollIntoView({behavior: 'smooth'})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm">
+                        Start Presentation
+                    </button>
+                    <div class="px-6 py-3 border border-slate-200 rounded-lg text-slate-500 font-mono text-sm bg-white shadow-sm">
+                        Target: Engineering Team
+                    </div>
+                </div>
+            </section>
+
+            <section id="slide-2" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">02. Introduction</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">Why Build Offline-First?</h2>
+                <p class="text-slate-600 mb-8 text-lg">Offline-first means designing your app so it always works perfectly, even without the internet. It uses data saved on the phone to make everything feel fast and smooth.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-3xl mb-4">⚡</div>
+                        <h3 class="text-xl font-semibold mb-2">Instant Speed</h3>
+                        <p class="text-slate-600 text-sm">The app loads data from the phone first. Screens show up instantly without waiting for the internet.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-3xl mb-4">🛡️</div>
+                        <h3 class="text-xl font-semibold mb-2">Always Works</h3>
+                        <p class="text-slate-600 text-sm">The app works perfectly in subways, elevators, or places with bad signal. No more annoying loading spinners.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-3xl mb-4">🔋</div>
+                        <h3 class="text-xl font-semibold mb-2">Saves Battery</h3>
+                        <p class="text-slate-600 text-sm">Using local data and grouping network updates saves battery life and uses less cellular data.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="slide-3" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">03. Architecture</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">The Core Idea</h2>
+                <div class="bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex flex-col md:flex-row gap-8 items-center">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Old Way: Cloud-First</h3>
+                            <ul class="space-y-3 text-slate-600">
+                                <li class="flex items-start gap-2"><span class="text-red-500 font-bold">✕</span> App asks internet for data.</li>
+                                <li class="flex items-start gap-2"><span class="text-red-500 font-bold">✕</span> App waits (loading spinner).</li>
+                                <li class="flex items-start gap-2"><span class="text-red-500 font-bold">✕</span> App shows data or an error.</li>
+                                <li class="text-sm italic mt-2 text-slate-400">The online database is the boss.</li>
+                            </ul>
+                        </div>
+                        <div class="text-2xl text-slate-300 font-bold hidden md:block">VS</div>
+                        <div class="flex-1 bg-indigo-50 p-6 rounded-lg border border-indigo-100">
+                            <h3 class="text-lg font-bold text-indigo-900 mb-4 border-b border-indigo-200 pb-2">New Way: Offline-First</h3>
+                            <ul class="space-y-3 text-indigo-800">
+                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">✓</span> App reads/saves to phone's storage.</li>
+                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">✓</span> App shows data immediately.</li>
+                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">✓</span> Phone syncs with internet in the background.</li>
+                                <li class="text-sm italic mt-2 text-indigo-500 font-semibold">The phone's storage is the boss.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="slide-4" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">04. Tooling</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">Expo & React Native Tools</h2>
+                <p class="text-slate-600 mb-6">Expo gives us great tools for offline apps. We use these along with community tools to build a strong system.</p>
+                <div class="bg-slate-900 rounded-xl p-6 text-slate-300 shadow-lg">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="text-white font-semibold mb-3 border-b border-slate-700 pb-2">Internet Checking</h4>
+                            <ul class="space-y-2 text-sm">
+                                <li><code class="text-indigo-300 bg-slate-800 px-1 rounded">expo-network</code> - Simple online/offline checks.</li>
+                                <li><code class="text-indigo-300 bg-slate-800 px-1 rounded">@react-native-community/netinfo</code> - Detailed checks (WiFi vs. Cellular) and listeners.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-semibold mb-3 border-b border-slate-700 pb-2">Saving & Fetching Data</h4>
+                            <ul class="space-y-2 text-sm">
+                                <li><code class="text-emerald-300 bg-slate-800 px-1 rounded">TanStack Query</code> - Automatically saves data and retries when offline.</li>
+                                <li><code class="text-emerald-300 bg-slate-800 px-1 rounded">Zustand/Redux Persist</code> - Saves app settings.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="slide-5" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">05. Storage</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">Local Storage Options</h2>
+                <p class="text-slate-600 mb-8">Picking the right local database is very important. It decides how much data you can save and how fast the app runs.</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse bg-white shadow-sm rounded-lg overflow-hidden">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 text-sm uppercase tracking-wider">
+                                <th class="p-4 font-semibold">Tool</th>
+                                <th class="p-4 font-semibold">Type</th>
+                                <th class="p-4 font-semibold">Speed</th>
+                                <th class="p-4 font-semibold">Best For</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-slate-600 divide-y divide-slate-200">
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-4 font-mono text-sm text-indigo-600">AsyncStorage</td>
+                                <td class="p-4">Simple Text</td>
+                                <td class="p-4"><span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs">Slow</span></td>
+                                <td class="p-4">Login tokens, old apps.</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-4 font-mono text-sm text-indigo-600">react-native-mmkv</td>
+                                <td class="p-4">Simple Data</td>
+                                <td class="p-4"><span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">Super Fast</span></td>
+                                <td class="p-4">Saving internet data, app settings, fast updates.</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-4 font-mono text-sm text-indigo-600">expo-sqlite</td>
+                                <td class="p-4">Tables & Relations</td>
+                                <td class="p-4"><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">Fast</span></td>
+                                <td class="p-4">Complex searching, lots of data, offline features.</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-4 font-mono text-sm text-indigo-600">WatermelonDB</td>
+                                <td class="p-4">Smart SQLite</td>
+                                <td class="p-4"><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">Fast + Scales well</span></td>
+                                <td class="p-4">Complex offline apps, automatic screen updates.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="slide-6" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">06. Speed Analytics</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">Storage Speed Test</h2>
+                <p class="text-slate-600 mb-6">Why we stop using AsyncStorage for offline apps. This shows how many saves/loads can happen in one second (higher is better).</p>
+                
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="chart-container">
+                        <canvas id="storageChart"></canvas>
+                    </div>
+                    <p class="text-center text-xs text-slate-400 mt-4">Simulated test of 1000 fast actions in React Native.</p>
+                </div>
+            </section>
+
+            <section id="slide-7" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">07. Database Data</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">Expo SQLite Basics</h2>
+                <p class="text-slate-600 mb-6">For complex apps, we need a real database. <code class="bg-slate-100 px-1 rounded text-sm">expo-sqlite</code> lets us talk to the database instantly, without waiting for the old React Native bridge.</p>
+                
+                <div class="code-block text-sm">
+import * as SQLite from 'expo-sqlite';
+
+// Open database instantly
+const db = SQLite.openDatabaseSync('myApp.db');
+
+// Create a table safely
+db.execSync(`
+  CREATE TABLE IF NOT EXISTS sync_queue (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    action TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+// Prepare and run a save action instantly
+const statement = db.prepareSync('INSERT INTO sync_queue (action, payload) VALUES (?, ?)');
+statement.executeSync(['CREATE_USER', JSON.stringify({name: 'Alice'})]);
+                </div>
+            </section>
+
+            <section id="slide-8" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">08. Simple Saving</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">MMKV: Super Fast Saving</h2>
+                <p class="text-slate-600 mb-6">When you don't need a complex database, but just want raw speed for saving simple data or settings, MMKV is the best choice.</p>
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <ul class="space-y-4">
+                            <li class="flex items-center gap-3">
+                                <div class="bg-indigo-100 text-indigo-700 w-8 h-8 rounded-full flex items-center justify-center font-bold">1</div>
+                                <span>Built with C++ for maximum speed</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <div class="bg-indigo-100 text-indigo-700 w-8 h-8 rounded-full flex items-center justify-center font-bold">2</div>
+                                <span>Instant saves and loads (no waiting)</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <div class="bg-indigo-100 text-indigo-700 w-8 h-8 rounded-full flex items-center justify-center font-bold">3</div>
+                                <span>Built-in security and encryption</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="code-block text-sm">
+import { MMKV } from 'react-native-mmkv'
+
+export const storage = new MMKV()
+
+// Save data instantly
+storage.set('user.preferences', JSON.stringify({ theme: 'dark' }))
+
+// Load data instantly
+const prefs = storage.getString('user.preferences')
+                    </div>
+                </div>
+            </section>
+
+            <section id="slide-9" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">09. Advanced Tools</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">WatermelonDB</h2>
+                <p class="text-slate-600 mb-6">Built just for offline React Native apps. It uses SQLite but makes it "smart" and automatic.</p>
+                <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                    <h3 class="font-bold text-slate-800 mb-3">The "Smart" Advantage</h3>
+                    <p class="text-sm text-slate-600 mb-4">When data changes in the background (like after a sync), WatermelonDB automatically updates only the parts of the screen that need it.</p>
+                    <div class="flex items-center gap-4 text-sm font-mono text-indigo-700 bg-indigo-50 p-4 rounded-lg">
+                        <span>Background Sync</span>
+                        <span>&rarr;</span>
+                        <span>Database Updates</span>
+                        <span>&rarr;</span>
+                        <span>Screen Auto-Updates</span>
+                    </div>
+                </div>
+            </section>
+
+            <section id="slide-10" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">10. Data Flow</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">How to Get Data</h2>
+                <p class="text-slate-600 mb-6">An offline app needs clear rules for how it gets data. We use different methods based on what the app needs.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                    <div class="bg-slate-50 p-5 rounded-lg border border-slate-200">
+                        <h4 class="font-bold text-slate-800 mb-2">Cache First</h4>
+                        <p class="text-slate-500">Check the phone first. If data is there, use it right away. <i>Best for data that rarely changes.</i></p>
+                    </div>
+                    <div class="bg-slate-50 p-5 rounded-lg border border-slate-200">
+                        <h4 class="font-bold text-slate-800 mb-2">Network First</h4>
+                        <p class="text-slate-500">Try the internet first. If it fails, use the phone's saved data. <i>Best for data that changes a lot.</i></p>
+                    </div>
+                    <div class="bg-indigo-50 p-5 rounded-lg border border-indigo-200">
+                        <h4 class="font-bold text-indigo-900 mb-2">Show Old, Fetch New</h4>
+                        <p class="text-indigo-700">Show saved data instantly. Meanwhile, get new data from the internet in the background. <i>Gives the best user experience.</i></p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="slide-11" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">11. Interactive Concept</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">Data Strategy Simulator</h2>
+                <p class="text-slate-600 mb-8">Click a button to see how the app moves data between the Screen, the Phone's Storage (Cache), and the Internet (Network).</p>
+                
+                <div class="bg-white p-8 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+                    <div class="flex gap-4 mb-10 justify-center">
+                        <button onclick="simulateFlow('cacheFirst')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition">Cache First</button>
+                        <button onclick="simulateFlow('networkFirst')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition">Network First</button>
+                        <button onclick="simulateFlow('swr')" class="px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-lg text-sm font-semibold transition">Show Old, Fetch New</button>
+                    </div>
+
+                    <div class="flex justify-between items-center max-w-2xl mx-auto relative h-40">
+                        <!-- Connecting Lines -->
+                        <div class="absolute top-1/2 left-[10%] right-[50%] h-1 bg-slate-200 -translate-y-1/2 -z-10"></div>
+                        <div class="absolute top-1/2 left-[50%] right-[10%] h-1 bg-slate-200 -translate-y-1/2 -z-10"></div>
+                        
+                        <!-- Flow indicators -->
+                        <div id="path-app-cache" class="absolute top-1/2 left-[30%] -translate-y-4 flow-path font-bold">&rarr;</div>
+                        <div id="path-cache-app" class="absolute top-1/2 left-[30%] translate-y-2 flow-path font-bold">&larr;</div>
+                        
+                        <div id="path-cache-net" class="absolute top-1/2 left-[70%] -translate-y-4 flow-path font-bold">&rarr;</div>
+                        <div id="path-net-cache" class="absolute top-1/2 left-[70%] translate-y-2 flow-path font-bold">&larr;</div>
+
+                        <!-- Nodes -->
+                        <div id="node-app" class="flow-node bg-white border-2 border-slate-300 w-24 h-24 rounded-full flex items-center justify-center font-bold text-slate-700 z-0 text-center text-sm">App<br/>Screen</div>
+                        <div id="node-cache" class="flow-node bg-white border-2 border-slate-300 w-24 h-24 rounded-full flex items-center justify-center font-bold text-slate-700 z-0 text-center text-sm">Phone<br/>Storage</div>
+                        <div id="node-net" class="flow-node bg-white border-2 border-slate-300 w-24 h-24 rounded-full flex items-center justify-center font-bold text-slate-700 z-0 text-center text-sm">Internet</div>
+                    </div>
+                    <div id="sim-status" class="text-center mt-6 h-6 text-sm font-mono text-indigo-600 font-semibold">Waiting to start...</div>
+                </div>
+            </section>
+
+            <section id="slide-12" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">12. Implementation</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">Writing the Code</h2>
+                <p class="text-slate-600 mb-6">Tools like React Query handle the complex "Show Old, Fetch New" logic for us easily.</p>
+                <div class="code-block text-sm">
+import { useQuery } from '@tanstack/react-query';
+import { storage } from './mmkv';
+
+const fetchUser = async () => {
+  const response = await fetch('/api/user');
+  return response.json();
+};
+
+export function UserProfile() {
+  const { data, isFetching } = useQuery({
+    queryKey: ['user'],
+    queryFn: fetchUser,
+    staleTime: 1000 * 60 * 5, // Data is considered "fresh" for 5 minutes
+    
+    // React Query instantly returns the saved data,
+    // while checking for updates in the background.
+  });
+
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;{data?.name}&lt;/Text&gt;
+      {isFetching && &lt;Text&gt;Updating in background...&lt;/Text&gt;}
+    &lt;/View&gt;
+  );
+}
+                </div>
+            </section>
+
+            <section id="slide-13" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">13. Handling Writes</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">Saving Changes Offline</h2>
+                <p class="text-slate-600 mb-6">Loading data offline is easy. But saving user changes while offline is harder. When a user creates something offline, the app must: </p>
+                <ul class="list-decimal pl-6 space-y-3 text-slate-700 mb-8">
+                    <li>Accept the user's input without showing an error.</li>
+                    <li>Create a temporary ID right there on the phone.</li>
+                    <li>Update the phone's database right away.</li>
+                    <li>Save the action in an <strong>Offline Queue</strong> to send to the internet later.</li>
+                </ul>
+                <div class="bg-amber-50 border-l-4 border-amber-500 p-4 text-amber-800 text-sm">
+                    <strong>Warning:</strong> Don't rely on the server to create IDs if you want the app to work offline. Always create IDs on the phone first.
+                </div>
+            </section>
+
+            <section id="slide-14" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">14. Core Infrastructure</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">The Offline Queue</h2>
+                <p class="text-slate-600 mb-6">This is just a saved list of tasks waiting to be sent to the internet when you get your signal back.</p>
+                
+                <div class="overflow-x-auto bg-white rounded-lg shadow-sm border border-slate-200 mb-6">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-xs text-slate-500 uppercase">
+                                <th class="p-3">Task ID</th>
+                                <th class="p-3">Action Type</th>
+                                <th class="p-3">Data</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3">Retries</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm text-slate-700 divide-y divide-slate-100">
+                            <tr>
+                                <td class="p-3 font-mono text-xs">job_8f2a</td>
+                                <td class="p-3"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">ADD_NOTE</span></td>
+                                <td class="p-3 font-mono text-xs text-slate-500">{id: "t_1", title: "Buy milk"}</td>
+                                <td class="p-3"><span class="text-amber-600 font-semibold">WAITING</span></td>
+                                <td class="p-3">0</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono text-xs">job_91bc</td>
+                                <td class="p-3"><span class="bg-purple-100 text-purple-800 px-2 py-1 rounded">CHANGE_COLOR</span></td>
+                                <td class="p-3 font-mono text-xs text-slate-500">{theme: "dark"}</td>
+                                <td class="p-3"><span class="text-red-600 font-semibold">FAILED_NO_INTERNET</span></td>
+                                <td class="p-3">2</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="slide-15" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">15. User Experience</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">Instant Screen Updates</h2>
+                <p class="text-slate-600 mb-6">Also known as "Optimistic UI," this means updating the screen instantly when the user clicks something, assuming the internet request will work out fine later.</p>
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="flex-1 bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative">
+                        <div class="absolute -top-3 -right-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow">The Old Way</div>
+                        <ol class="space-y-4 text-sm text-slate-600 relative border-l border-slate-200 pl-4 ml-2">
+                            <li class="relative before:absolute before:w-3 before:h-3 before:bg-slate-300 before:rounded-full before:-left-[22px] before:top-1">User clicks "Like"</li>
+                            <li class="relative before:absolute before:w-3 before:h-3 before:bg-slate-300 before:rounded-full before:-left-[22px] before:top-1">App shows loading spinner</li>
+                            <li class="relative before:absolute before:w-3 before:h-3 before:bg-slate-300 before:rounded-full before:-left-[22px] before:top-1 text-xs text-slate-400">... sending to internet ... (wait 1 second)</li>
+                            <li class="relative before:absolute before:w-3 before:h-3 before:bg-slate-300 before:rounded-full before:-left-[22px] before:top-1">Internet says "Success!"</li>
+                            <li class="relative before:absolute before:w-3 before:h-3 before:bg-slate-300 before:rounded-full before:-left-[22px] before:top-1">Button turns Blue</li>
+                        </ol>
+                    </div>
+                    <div class="flex-1 bg-indigo-50 p-6 rounded-xl border border-indigo-100 shadow-sm relative">
+                        <div class="absolute -top-3 -right-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow">The Instant Way</div>
+                        <ol class="space-y-4 text-sm text-indigo-900 relative border-l border-indigo-200 pl-4 ml-2">
+                            <li class="relative before:absolute before:w-3 before:h-3 before:bg-indigo-400 before:rounded-full before:-left-[22px] before:top-1">User clicks "Like"</li>
+                            <li class="relative before:absolute before:w-3 before:h-3 before:bg-indigo-600 before:rounded-full before:-left-[22px] before:top-1 font-bold">Button turns Blue RIGHT AWAY</li>
+                            <li class="relative before:absolute before:w-3 before:h-3 before:bg-indigo-400 before:rounded-full before:-left-[22px] before:top-1 text-xs text-indigo-500">... internet request runs silently in background ...</li>
+                            <li class="relative before:absolute before:w-3 before:h-3 before:bg-indigo-400 before:rounded-full before:-left-[22px] before:top-1">Internet says "Success!" (nobody notices)</li>
+                            <li class="relative before:absolute before:w-3 before:h-3 before:bg-red-400 before:rounded-full before:-left-[22px] before:top-1 text-slate-500 italic">If it fails: Show an error and turn button gray again</li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+
+            <section id="slide-16" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">16. Connectivity</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">Sending Saved Tasks</h2>
+                <p class="text-slate-600 mb-6">When do we send our saved tasks to the internet? We listen for when the internet comes back or when the user opens the app.</p>
+                <div class="code-block text-sm">
+import NetInfo from '@react-native-community/netinfo';
+import { AppState } from 'react-native';
+
+// 1. Listen for the internet turning back on
+NetInfo.addEventListener(state => {
+  if (state.isConnected && state.isInternetReachable) {
+    sendSavedTasks();
+  }
+});
+
+// 2. Listen for the user opening the app
+AppState.addEventListener('change', nextAppState => {
+  if (nextAppState === 'active') {
+    sendSavedTasks();
+  }
+});
+                </div>
+            </section>
+
+            <section id="slide-17" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">17. Resolving Problems</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">Understanding Sync Conflicts</h2>
+                <p class="text-slate-600 mb-6">In an offline app, two users might edit the exact same thing at the same time. When they both connect to the internet, their changes might fight each other. This is a sync conflict.</p>
+                
+                <div class="bg-slate-50 p-6 rounded-lg border border-slate-200">
+                    <h4 class="font-bold text-slate-700 mb-4 border-b pb-2">The Problem</h4>
+                    <div class="flex flex-col gap-2 font-mono text-sm">
+                        <div class="p-2 bg-white rounded shadow-sm">1. Start: Document title is "Draft"</div>
+                        <div class="p-2 bg-white rounded shadow-sm text-blue-600 border-l-4 border-blue-500">2. User A (Offline) changes title to "Final Draft" at 10:00 AM</div>
+                        <div class="p-2 bg-white rounded shadow-sm text-green-600 border-l-4 border-green-500">3. User B (Online) changes title to "Published" at 10:05 AM & saves</div>
+                        <div class="p-2 bg-white rounded shadow-sm font-bold text-red-600">4. User A goes online at 10:10 AM & tries to save "Final Draft"</div>
+                        <div class="mt-2 text-slate-800 font-bold">What should the server save?</div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="slide-18" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">18. Interactive Simulator</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">Conflict Simulator</h2>
+                <p class="text-slate-600 mb-6">Pick a rule to see how the server handles the delayed update from User A.</p>
+
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">How to decide the winner:</label>
+                        <select id="conflict-strategy" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 outline-none" onchange="resolveConflict()">
+                            <option value="lww">Last To Sync Wins</option>
+                            <option value="timestamp">Edit Time Wins (Who edited first?)</option>
+                            <option value="server_wins">First To Sync Wins</option>
+                        </select>
+                    </div>
+
+                    <div class="mt-8 p-4 bg-slate-900 rounded-lg text-slate-300 font-mono text-sm">
+                        <div class="mb-2 text-slate-500">// What happens on the server</div>
+                        <div id="conflict-output" class="text-emerald-400">Select a rule to view the result.</div>
+                    </div>
+                    
+                    <div id="conflict-explanation" class="mt-4 text-sm text-slate-600 italic h-12">
+                        <!-- populated by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <section id="slide-19" class="slide-section">
+                <div class="text-indigo-600 font-mono text-sm mb-2">19. Architecture</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">The Big Picture</h2>
+                <p class="text-slate-600 mb-8">This is how all the pieces of an offline Expo app fit together.</p>
+                
+                <div class="p-8 bg-slate-50 border border-slate-200 rounded-xl relative">
+                    <!-- HTML/CSS Flowchart Representation -->
+                    <div class="flex flex-col items-center gap-6">
+                        <div class="bg-white border-2 border-indigo-500 px-6 py-3 rounded-lg font-bold shadow-sm w-48 text-center relative">
+                            App Screens
+                            <!-- Arrow down -->
+                            <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 text-slate-400">&darr;</div>
+                        </div>
+                        
+                        <div class="bg-white border-2 border-slate-400 px-6 py-3 rounded-lg font-bold shadow-sm w-64 text-center relative z-10">
+                            Smart Data Manager
+                            <div class="absolute -bottom-6 left-[20%] text-slate-400">&darr; reads</div>
+                            <div class="absolute -bottom-6 right-[20%] text-slate-400">&darr; writes</div>
+                        </div>
+
+                        <div class="flex gap-8 w-full justify-center">
+                            <div class="bg-white border-2 border-emerald-500 px-4 py-3 rounded-lg font-bold shadow-sm w-40 text-center relative text-sm">
+                                Phone Database
+                            </div>
+                            <div class="bg-white border-2 border-amber-500 px-4 py-3 rounded-lg font-bold shadow-sm w-40 text-center relative text-sm">
+                                Offline Task Queue
+                                <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 text-slate-400">&darr; Background</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 bg-slate-800 text-white border-2 border-slate-900 px-6 py-3 rounded-lg font-bold shadow-sm w-48 text-center">
+                            Internet / Server
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="slide-20" class="slide-section pb-32 border-none">
+                <div class="text-indigo-600 font-mono text-sm mb-2">20. Conclusion</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">Summary & Best Practices</h2>
+                
+                <div class="grid md:grid-cols-2 gap-6 mt-8">
+                    <div class="bg-green-50 border-l-4 border-green-500 p-6 rounded-r-lg">
+                        <h4 class="font-bold text-green-900 mb-3 text-lg">Do's</h4>
+                        <ul class="space-y-2 text-green-800 text-sm">
+                            <li>&bull; Create IDs on the phone, not the server.</li>
+                            <li>&bull; Treat the phone's storage as the main boss.</li>
+                            <li>&bull; Use good databases (like SQLite) for big apps.</li>
+                            <li>&bull; Always update the screen instantly for user clicks.</li>
+                            <li>&bull; Hide deleted items instead of erasing them completely from the phone.</li>
+                        </ul>
+                    </div>
+                    <div class="bg-red-50 border-l-4 border-red-500 p-6 rounded-r-lg">
+                        <h4 class="font-bold text-red-900 mb-3 text-lg">Don'ts</h4>
+                        <ul class="space-y-2 text-red-800 text-sm">
+                            <li>&bull; Don't freeze the screen waiting for the internet.</li>
+                            <li>&bull; Don't use AsyncStorage for large lists of data.</li>
+                            <li>&bull; Don't rely on the server to number your items (like 1, 2, 3).</li>
+                            <li>&bull; Don't build complex sync systems from scratch if good tools exist.</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mt-12 text-center text-slate-500 text-sm">
+                    End of presentation. Use the sidebar to click on specific topics for reference.
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <script>
+        // --- Navigation Logic ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+            const mainContent = document.getElementById('main-content');
+
+            const observerOptions = {
+                root: mainContent,
+                rootMargin: '0px',
+                threshold: 0.3
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('id');
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === `#${id}`) {
+                                link.classList.add('active');
+                                link.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => observer.observe(section));
+
+            // Smooth scrolling for sidebar links
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetSection = document.getElementById(targetId);
+                    if (targetSection) {
+                        targetSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+
+            // --- Chart.js Setup (Slide 6) ---
+            const ctx = document.getElementById('storageChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['AsyncStorage', 'SQLite', 'MMKV'],
+                    datasets: [
+                        {
+                            label: 'Write Ops/sec',
+                            data: [120, 1500, 8500],
+                            backgroundColor: 'rgba(79, 70, 229, 0.8)',
+                            borderColor: 'rgba(79, 70, 229, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Read Ops/sec',
+                            data: [200, 3000, 12000],
+                            backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            type: 'logarithmic', // Log scale because MMKV is so much faster
+                            title: {
+                                display: true,
+                                text: 'Operations / Second (Log Scale)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.raw.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Initial run of conflict simulator to populate UI
+            resolveConflict();
+        });
+
+        // --- Caching Strategy Simulator Logic (Slide 11) ---
+        function resetFlow() {
+            document.querySelectorAll('.flow-node').forEach(el => el.classList.remove('flow-active'));
+            document.querySelectorAll('.flow-path').forEach(el => el.classList.remove('path-active'));
+        }
+
+        function highlightNode(id) { document.getElementById('node-' + id).classList.add('flow-active'); }
+        function dimNode(id) { document.getElementById('node-' + id).classList.remove('flow-active'); }
+        function highlightPath(id) { document.getElementById('path-' + id).classList.add('path-active'); }
+        function dimPath(id) { document.getElementById('path-' + id).classList.remove('path-active'); }
+        function setStatus(text) { document.getElementById('sim-status').innerText = text; }
+
+        function simulateFlow(strategy) {
+            resetFlow();
+            
+            if(strategy === 'cacheFirst') {
+                setStatus("1. App asks phone storage for data");
+                highlightNode('app');
+                setTimeout(() => {
+                    highlightPath('app-cache');
+                    highlightNode('cache');
+                    setStatus("2. Found it! Returning data instantly.");
+                    setTimeout(() => {
+                        dimPath('app-cache');
+                        highlightPath('cache-app');
+                        setStatus("3. Screen shows data immediately. (Internet ignored)");
+                        setTimeout(() => { resetFlow(); setStatus("Done."); }, 2000);
+                    }, 1000);
+                }, 1000);
+            } 
+            else if (strategy === 'networkFirst') {
+                setStatus("1. App tries the internet first");
+                highlightNode('app');
+                setTimeout(() => {
+                    highlightPath('app-cache');
+                    highlightNode('cache');
+                    highlightPath('cache-net');
+                    highlightNode('net');
+                    setStatus("2. Waiting for the internet...");
+                    setTimeout(() => {
+                        dimPath('app-cache');
+                        dimPath('cache-net');
+                        highlightPath('net-cache');
+                        setStatus("3. Internet replies. Saving to phone.");
+                        setTimeout(() => {
+                            dimPath('net-cache');
+                            dimNode('net');
+                            highlightPath('cache-app');
+                            setStatus("4. Phone gives fresh data to the Screen.");
+                            setTimeout(() => { resetFlow(); setStatus("Done."); }, 2000);
+                        }, 1000);
+                    }, 1500);
+                }, 1000);
+            }
+            else if (strategy === 'swr') {
+                setStatus("1. App asks for data. Phone returns OLD data instantly.");
+                highlightNode('app');
+                setTimeout(() => {
+                    highlightPath('app-cache');
+                    highlightNode('cache');
+                    highlightPath('cache-app'); 
+                    setTimeout(() => {
+                        dimPath('app-cache');
+                        setStatus("2. Screen shows old data. At the SAME TIME, it asks the internet.");
+                        highlightPath('cache-net');
+                        highlightNode('net');
+                        setTimeout(() => {
+                            dimPath('cache-net');
+                            dimPath('cache-app');
+                            highlightPath('net-cache');
+                            setStatus("3. Internet replies. Phone saves the fresh data silently.");
+                            setTimeout(() => {
+                                dimPath('net-cache');
+                                dimNode('net');
+                                highlightPath('cache-app'); 
+                                setStatus("4. Screen updates quietly with the new data.");
+                                setTimeout(() => { resetFlow(); setStatus("Done."); }, 2500);
+                            }, 1000);
+                        }, 1500);
+                    }, 1000);
+                }, 1000);
+            }
+        }
+
+        // --- Conflict Resolution Logic (Slide 18) ---
+        function resolveConflict() {
+            const strategy = document.getElementById('conflict-strategy').value;
+            const outputEl = document.getElementById('conflict-output');
+            const explanationEl = document.getElementById('conflict-explanation');
+
+            let resultHtml = "";
+            let explanationText = "";
+
+            if (strategy === 'lww') {
+                resultHtml = "Server saves: 'Final Draft'";
+                explanationText = "User A connected last (at 10:10 AM). The server overwrites User B's work with 'Final Draft'. User B's work is lost forever. Common, but dangerous.";
+            } else if (strategy === 'timestamp') {
+                resultHtml = "REJECTED. Local edit time (10:00 AM) is older than Server edit time (10:05 AM).";
+                explanationText = "The server looks at WHEN the edit happened. Since User A typed it at 10:00 AM, but the server already has a newer edit from 10:05 AM, it rejects User A's update.";
+            } else if (strategy === 'server_wins') {
+                resultHtml = "ERROR. Server State: 'Published'. <br/>User A must fetch new text and fix it manually.";
+                explanationText = "The server notices User A's app is outdated. It rejects the save and tells User A to download the latest version and fix the problem themselves.";
+            }
+
+            outputEl.innerHTML = resultHtml;
+            explanationEl.innerText = explanationText;
+        }
+
+    </script>
+</body>
+</html>
+
+
